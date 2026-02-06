@@ -22,62 +22,67 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final OAuthService oAuthService;
-    private final UserService userService;
+        private final OAuthService oAuthService;
+        private final UserService userService;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(@NotNull HttpSecurity http) throws Exception {
-        return http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/", "/oauth/**", "/register", "/error", "/login")
-                        .permitAll()
-                        .requestMatchers("/books/edit/**", "/books/add", "/books/delete").authenticated()
-                        .requestMatchers("/books", "/cart", "/cart/**").authenticated()
-                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().authenticated())
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login")
-                        .deleteCookies("JSESSIONID")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .permitAll())
-                .formLogin(formLogin -> formLogin
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/")
-                        .failureUrl("/login?error")
-                        .permitAll())
-                .oauth2Login(
-                        oauth2Login -> oauth2Login
-                                .loginPage("/login")
-                                .failureUrl("/login?error")
-                                .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
-                                        .userService(oAuthService))
-                                .successHandler(
-                                        (request, response, authentication) -> {
-                                            var oidcUser = (DefaultOidcUser) authentication.getPrincipal();
-                                            userService.saveOauthUser(oidcUser.getEmail(), oidcUser.getName());
-                                            response.sendRedirect("/");
-                                        })
-                                .permitAll())
-                .rememberMe(rememberMe -> rememberMe
-                        .key("hutech")
-                        .rememberMeCookieName("hutech")
-                        .tokenValiditySeconds(24 * 60 * 60)
-                        .userDetailsService(userService))
-                .exceptionHandling(exceptionHandling -> exceptionHandling
-                        .accessDeniedPage("/403"))
-                .sessionManagement(sessionManagement -> sessionManagement
-                        .maximumSessions(1)
-                        .expiredUrl("/login"))
-                .httpBasic(httpBasic -> httpBasic
-                        .realmName("hutech"))
-                .build();
-    }
+        @Bean
+        public SecurityFilterChain securityFilterChain(@NotNull HttpSecurity http) throws Exception {
+                return http
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/css/**", "/js/**", "/", "/oauth/**", "/register",
+                                                                "/error", "/login")
+                                                .permitAll()
+                                                .requestMatchers("/books/edit/**", "/books/add", "/books/delete")
+                                                .hasAnyAuthority("ADMIN")
+                                                .requestMatchers("/books", "/cart", "/cart/**")
+                                                .hasAnyAuthority("ADMIN", "USER")
+                                                .requestMatchers("/api/**").hasAnyAuthority("ADMIN", "USER")
+                                                .anyRequest().authenticated())
+                                .logout(logout -> logout
+                                                .logoutUrl("/logout")
+                                                .logoutSuccessUrl("/login")
+                                                .deleteCookies("JSESSIONID")
+                                                .invalidateHttpSession(true)
+                                                .clearAuthentication(true)
+                                                .permitAll())
+                                .formLogin(formLogin -> formLogin
+                                                .loginPage("/login")
+                                                .loginProcessingUrl("/login")
+                                                .defaultSuccessUrl("/")
+                                                .failureUrl("/login?error")
+                                                .permitAll())
+                                .oauth2Login(
+                                                oauth2Login -> oauth2Login
+                                                                .loginPage("/login")
+                                                                .failureUrl("/login?error")
+                                                                .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
+                                                                                .oidcUserService(oAuthService))
+                                                                .successHandler(
+                                                                                (request, response, authentication) -> {
+                                                                                        var oidcUser = (DefaultOidcUser) authentication
+                                                                                                        .getPrincipal();
+                                                                                        userService.saveOauthUser(
+                                                                                                        oidcUser.getEmail(),
+                                                                                                        oidcUser.getName());
+                                                                                        response.sendRedirect("/");
+                                                                                })
+                                                                .permitAll())
+                                .rememberMe(rememberMe -> rememberMe
+                                                .key("hutech")
+                                                .rememberMeCookieName("hutech")
+                                                .tokenValiditySeconds(24 * 60 * 60)
+                                                .userDetailsService(userService))
+
+                                .sessionManagement(sessionManagement -> sessionManagement
+                                                .maximumSessions(1)
+                                                .expiredUrl("/login"))
+                                .httpBasic(httpBasic -> httpBasic
+                                                .realmName("hutech"))
+                                .build();
+        }
 }

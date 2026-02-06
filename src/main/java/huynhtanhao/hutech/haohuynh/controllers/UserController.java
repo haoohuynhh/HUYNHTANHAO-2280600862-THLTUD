@@ -36,6 +36,15 @@ public class UserController {
     public String register(@Valid @ModelAttribute("user") User user,
             @NotNull BindingResult bindingResult,
             Model model) {
+        if (userService.findByUsername(user.getUsername()).isPresent()) {
+            bindingResult.rejectValue("username", "error.user", "Username already exists");
+        }
+        if (userService.findByEmail(user.getEmail()).isPresent()) {
+            bindingResult.rejectValue("email", "error.user", "Email already exists");
+        }
+        if (userService.findByPhone(user.getPhone()).isPresent()) {
+            bindingResult.rejectValue("phone", "error.user", "Phone number already exists");
+        }
         if (bindingResult.hasErrors()) {
             var errors = bindingResult.getAllErrors()
                     .stream()
@@ -45,6 +54,7 @@ public class UserController {
             return "user/register";
         }
         userService.save(user);
+
         return "redirect:/login";
     }
 }

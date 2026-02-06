@@ -27,7 +27,7 @@
             <div class="col" th:each="course : ${courses}">
                 <div class="card h-100 shadow-sm">
                     <img th:src="${course.imageUrl}" class="card-img-top" alt="Course Image"
-                        style="height: 200px; object-fit: cover; onerror: this.src='https://via.placeholder.com/300'">
+                        style="height: 200px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/300'">
                     <div class="card-body">
                         <h5 class="card-title" th:text="${course.name}">Tên môn học</h5>
                         <p class="card-text">
